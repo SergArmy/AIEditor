@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal Example - Inline Editor для 1С</title>
+  <style>
+    /* CSS Variables */
+    :root {
+      /* Colors */
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --accent-color: #3b82f6;
+      --border-color: #e5e7eb;
+      
+      /* Backgrounds */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f9fafb;
+      --selected-bg: rgba(59, 130, 246, 0.05);
+      --editable-bg: transparent;
+      
+      /* Block variants */
+      --note-bg: #eff6ff;
+      --note-border: #3b82f6;
+      --important-bg: #fef3c7;
+      --important-border: #f59e0b;
+      --warning-bg: #fee2e2;
+      --warning-border: #ef4444;
+      
+      /* Spacing */
+      --block-margin: 8px 0;
+      --block-padding: 12px;
+      --block-border-radius: 4px;
+      
+      /* Other */
+      --placeholder-color: #9ca3af;
+      --block-border-color: transparent;
+      --block-hover-border: #e5e7eb;
+      --code-bg: #f3f4f6;
+      --toolbar-bg: #ffffff;
+      --toolbar-border: #e5e7eb;
+      --hover-bg: #f3f4f6;
+      --active-bg: #dbeafe;
+    }
+
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background-color: var(--bg-primary);
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      font-size: 1rem;
+    }
+
+    .section {
+      margin-bottom: 3rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .description {
+      background-color: var(--bg-secondary);
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 16px;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    button.secondary:hover {
+      background-color: var(--hover-bg);
+    }
+
+    .output {
+      background-color: var(--bg-secondary);
+      padding: 1rem;
+      border-radius: 6px;
+      margin-top: 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+    }
+
+    .editor-container {
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 20px;
+      background-color: var(--bg-primary);
+      min-height: 200px;
+    }
+
+    .info-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background-color: var(--note-bg);
+      color: var(--accent-color);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .keyboard-hint {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background-color: var(--bg-secondary);
+      border-radius: 4px;
+      border-left: 3px solid var(--accent-color);
+    }
+
+    .keyboard-hint kbd {
+      padding: 2px 6px;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Minimal Example <span class="info-badge">v0.1.0</span></h1>
+    <p class="subtitle">Демонстрация базовых блоков редактора документации для 1С</p>
+
+    <!-- Секция 1: Базовый блок -->
+    <div class="section">
+      <h2 class="section-title">1. BaseBlock - Базовый блок</h2>
+      <div class="description">
+        <strong>BaseBlock</strong> - это базовый класс для всех блоков. Он предоставляет основную функциональность: 
+        выделение, сериализацию, управление атрибутами и обработку событий.
+      </div>
+      
+      <div class="editor-container">
+        <base-block id="base-demo">
+          Это базовый блок. Кликните на него, чтобы выделить.
+        </base-block>
+      </div>
+
+      <div class="keyboard-hint">
+        💡 <strong>Подсказка:</strong> Кликните на блок для выделения. Нажмите <kbd>Delete</kbd> для удаления.
+      </div>
+
+      <div class="controls">
+        <button onclick="selectBaseBlock()">Выделить</button>
+        <button onclick="deselectBaseBlock()">Снять выделение</button>
+        <button onclick="serializeBaseBlock()">Сериализовать</button>
+        <button class="secondary" onclick="deleteBaseBlock()">Удалить</button>
+      </div>
+
+      <div id="base-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- Секция 2: Редактируемый блок -->
+    <div class="section">
+      <h2 class="section-title">2. EditableBlock - Редактируемый блок</h2>
+      <div class="description">
+        <strong>EditableBlock</strong> расширяет BaseBlock и добавляет возможность редактирования содержимого.
+        Поддерживает placeholder, многострочный ввод и различные форматы.
+      </div>
+      
+      <div class="editor-container">
+        <editable-block id="editable-demo" placeholder="Кликните дважды для редактирования...">
+          Это редактируемый блок. Дважды кликните для редактирования.
+        </editable-block>
+      </div>
+
+      <div class="keyboard-hint">
+        💡 <strong>Подсказка:</strong> Дважды кликните для редактирования. <kbd>Enter</kbd> для входа в режим редактирования, <kbd>Esc</kbd> для выхода.
+      </div>
+
+      <div class="controls">
+        <button onclick="toggleEditableMode()">Переключить редактирование</button>
+        <button onclick="getEditableContent()">Получить содержимое</button>
+        <button onclick="setEditableContent()">Установить содержимое</button>
+        <button class="secondary" onclick="clearEditableContent()">Очистить</button>
+      </div>
+
+      <div id="editable-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- Секция 3: Текстовые блоки -->
+    <div class="section">
+      <h2 class="section-title">3. TextBlock - Текстовые блоки с вариантами</h2>
+      <div class="description">
+        <strong>TextBlock</strong> - это специализированный блок для текста с поддержкой различных вариантов отображения,
+        выравнивания и форматирования.
+      </div>
+      
+      <div class="editor-container">
+        <text-block id="text-paragraph" variant="paragraph" alignment="left">
+          Обычный параграф текста. Кликните для редактирования.
+        </text-block>
+
+        <text-block id="text-note" variant="note" alignment="left">
+          Это блок-заметка с информацией. Используется для важных примечаний.
+        </text-block>
+
+        <text-block id="text-important" variant="important" alignment="left">
+          Важная информация! Обратите внимание на этот блок.
+        </text-block>
+
+        <text-block id="text-warning" variant="warning" alignment="left">
+          Предупреждение! Будьте осторожны с этой операцией.
+        </text-block>
+      </div>
+
+      <div class="keyboard-hint">
+        💡 <strong>Подсказка:</strong> В режиме редактирования доступна панель форматирования: <kbd>Ctrl+B</kbd> (жирный), <kbd>Ctrl+I</kbd> (курсив), <kbd>Ctrl+U</kbd> (подчёркнутый).
+      </div>
+
+      <div class="controls">
+        <button onclick="changeVariant('paragraph')">Paragraph</button>
+        <button onclick="changeVariant('note')">Note</button>
+        <button onclick="changeVariant('important')">Important</button>
+        <button onclick="changeVariant('warning')">Warning</button>
+        <button class="secondary" onclick="serializeAllBlocks()">Сериализовать все</button>
+      </div>
+
+      <div id="text-output" class="output" style="display: none;"></div>
+    </div>
+
+    <!-- Секция 4: Тестирование сериализации -->
+    <div class="section">
+      <h2 class="section-title">4. Сериализация и восстановление</h2>
+      <div class="description">
+        Все блоки поддерживают сериализацию в JSON и восстановление из JSON. 
+        Это позволяет сохранять и загружать документы.
+      </div>
+      
+      <div class="controls">
+        <button onclick="saveDocument()">💾 Сохранить документ</button>
+        <button onclick="loadDocument()">📂 Загрузить документ</button>
+        <button class="secondary" onclick="clearStorage()">🗑️ Очистить хранилище</button>
+      </div>
+
+      <div id="serialization-output" class="output" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Подключение модулей -->
+  <script type="module">
+    import BaseBlock from '../src/elements/base/base-block.js';
+    import EditableBlock from '../src/elements/base/editable-block.js';
+    import TextBlock from '../src/elements/content/text-block.js';
+
+    // Сохранение в глобальную область для доступа из inline-скриптов
+    window.BaseBlock = BaseBlock;
+    window.EditableBlock = EditableBlock;
+    window.TextBlock = TextBlock;
+
+    console.log('✅ Модули загружены успешно');
+  </script>
+
+  <!-- Функции управления -->
+  <script>
+    // === BaseBlock функции ===
+    function selectBaseBlock() {
+      const block = document.getElementById('base-demo');
+      if (block) {
+        block.select();
+        showOutput('base-output', 'Блок выделен');
+      }
+    }
+
+    function deselectBaseBlock() {
+      const block = document.getElementById('base-demo');
+      if (block) {
+        block.deselect();
+        showOutput('base-output', 'Выделение снято');
+      }
+    }
+
+    function serializeBaseBlock() {
+      const block = document.getElementById('base-demo');
+      if (block) {
+        const data = block.serialize();
+        showOutput('base-output', JSON.stringify(data, null, 2));
+      }
+    }
+
+    function deleteBaseBlock() {
+      const block = document.getElementById('base-demo');
+      if (block && confirm('Удалить блок?')) {
+        block.delete();
+        showOutput('base-output', 'Блок удалён');
+      }
+    }
+
+    // === EditableBlock функции ===
+    function toggleEditableMode() {
+      const block = document.getElementById('editable-demo');
+      if (block) {
+        block.setEditable(!block.editable);
+        showOutput('editable-output', `Режим редактирования: ${block.editable ? 'ВКЛ' : 'ВЫКЛ'}`);
+      }
+    }
+
+    function getEditableContent() {
+      const block = document.getElementById('editable-demo');
+      if (block) {
+        const content = block.getContent();
+        showOutput('editable-output', `Содержимое: "${content}"`);
+      }
+    }
+
+    function setEditableContent() {
+      const block = document.getElementById('editable-demo');
+      if (block) {
+        const newContent = prompt('Введите новое содержимое:', block.getContent());
+        if (newContent !== null) {
+          block.setContent(newContent);
+          showOutput('editable-output', 'Содержимое обновлено');
+        }
+      }
+    }
+
+    function clearEditableContent() {
+      const block = document.getElementById('editable-demo');
+      if (block && confirm('Очистить содержимое?')) {
+        block.clearContent();
+        showOutput('editable-output', 'Содержимое очищено');
+      }
+    }
+
+    // === TextBlock функции ===
+    function changeVariant(variant) {
+      const blocks = ['text-paragraph', 'text-note', 'text-important', 'text-warning'];
+      blocks.forEach(id => {
+        const block = document.getElementById(id);
+        if (block) {
+          block.setVariant(variant);
+        }
+      });
+      showOutput('text-output', `Вариант изменён на: ${variant}`);
+    }
+
+    function serializeAllBlocks() {
+      const blocks = ['text-paragraph', 'text-note', 'text-important', 'text-warning'];
+      const serialized = blocks.map(id => {
+        const block = document.getElementById(id);
+        return block ? block.serialize() : null;
+      }).filter(Boolean);
+      
+      showOutput('text-output', JSON.stringify(serialized, null, 2));
+    }
+
+    // === Сериализация документа ===
+    function saveDocument() {
+      const allBlocks = document.querySelectorAll('base-block, editable-block, text-block');
+      const document = {
+        version: '1.0',
+        timestamp: Date.now(),
+        blocks: Array.from(allBlocks).map(block => block.serialize())
+      };
+      
+      localStorage.setItem('editor-document', JSON.stringify(document));
+      showOutput('serialization-output', 
+        `✅ Документ сохранён!\n\nБлоков: ${document.blocks.length}\n\n` + 
+        JSON.stringify(document, null, 2)
+      );
+    }
+
+    function loadDocument() {
+      const saved = localStorage.getItem('editor-document');
+      if (!saved) {
+        showOutput('serialization-output', '❌ Сохранённый документ не найден');
+        return;
+      }
+
+      try {
+        const document = JSON.parse(saved);
+        showOutput('serialization-output', 
+          `✅ Документ загружен!\n\nВерсия: ${document.version}\nБлоков: ${document.blocks.length}\n\n` +
+          JSON.stringify(document, null, 2)
+        );
+      } catch (e) {
+        showOutput('serialization-output', `❌ Ошибка загрузки: ${e.message}`);
+      }
+    }
+
+    function clearStorage() {
+      if (confirm('Очистить сохранённый документ?')) {
+        localStorage.removeItem('editor-document');
+        showOutput('serialization-output', '✅ Хранилище очищено');
+      }
+    }
+
+    // === Утилиты ===
+    function showOutput(elementId, content) {
+      const output = document.getElementById(elementId);
+      if (output) {
+        output.textContent = content;
+        output.style.display = 'block';
+      }
+    }
+
+    // Обработчики событий блоков
+    document.addEventListener('editor-block-selected', (e) => {
+      console.log('Блок выделен:', e.detail);
+    });
+
+    document.addEventListener('editor-content-changed', (e) => {
+      console.log('Содержимое изменено:', e.detail);
+    });
+
+    document.addEventListener('editor-block-deleted', (e) => {
+      console.log('Блок удалён:', e.detail);
+    });
+
+    // Двойной клик для редактирования
+    document.addEventListener('dblclick', (e) => {
+      const block = e.target.closest('editable-block, text-block');
+      if (block && !block.editable) {
+        block.setEditable(true);
+      }
+    });
+
+    console.log('✅ Скрипты инициализированы');
+  </script>
+</body>
+</html>
+
